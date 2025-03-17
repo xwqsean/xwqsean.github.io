@@ -36,6 +36,7 @@ const config = {
     locales: ['en'],
   },
 
+
   presets: [
     [
       'classic',
@@ -76,7 +77,7 @@ const config = {
       // Replace with your project's social card
       image: 'img/docusaurus-social-card.jpg',
       navbar: {
-        title: 'My Site',
+        title: '强哥叨逼叨',
         logo: {
           alt: 'My Site Logo',
           src: 'img/logo.svg',
@@ -86,9 +87,10 @@ const config = {
             type: 'docSidebar',
             sidebarId: 'tutorialSidebar',
             position: 'left',
-            label: 'Tutorial',
+            label: 'Docs',
           },
           {to: '/blog', label: 'Blog', position: 'left'},
+          {to: '/markdown-page', label: 'About', position: 'left'},
           {
             href: 'https://github.com/facebook/docusaurus',
             label: 'GitHub',
@@ -115,14 +117,6 @@ const config = {
                 label: 'Stack Overflow',
                 href: 'https://stackoverflow.com/questions/tagged/docusaurus',
               },
-              {
-                label: 'Discord',
-                href: 'https://discordapp.com/invite/docusaurus',
-              },
-              {
-                label: 'X',
-                href: 'https://x.com/docusaurus',
-              },
             ],
           },
           {
@@ -134,7 +128,7 @@ const config = {
               },
               {
                 label: 'GitHub',
-                href: 'https://github.com/facebook/docusaurus',
+                href: 'https://github.com/xwqsean',
               },
             ],
           },
@@ -144,6 +138,7 @@ const config = {
       prism: {
         theme: prismThemes.github,
         darkTheme: prismThemes.dracula,
+        additionalLanguages: ['powershell'],
       },
     }),
 };

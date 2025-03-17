@@ -2,6 +2,7 @@
 title: Markdown page example
 ---
 
-# Markdown page example
+# 嘿嘿嘿
 
-You don't need React to write simple standalone pages.
+走走看看
+
