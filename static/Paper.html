@@ -1,0 +1,2115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <!-- 网站标题 -->
+  <title>Paper - 轻量级微信公众号 Markdown 编辑器</title>
+  
+  <!-- 网站描述 -->
+  <meta name="description" content="Paper 是一款轻量级微信公众号 Markdown 编辑器。现代化三栏布局，实时 Markdown 预览，响应式设计；支持大部分 Markdown 语法，支持信息卡片。预览区与微信公众号编辑器等宽，所见即所得。欢迎使用👏" />
+  
+  <!-- 关键词 -->
+  <meta name="keywords" content="Paper,Markdown编辑器,微信公众号,排版工具,在线编辑器,实时预览,所见即所得,响应式设计,代码高亮,信息卡片" />
+  
+  <!-- 作者信息 -->
+  <meta name="author" content="nabin-cn,xiaolinbaba" />
+  
+  <!-- 网站图标 -->
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="shortcut icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="favicon.svg" />
+  
+  <!-- Open Graph 标签 (社交媒体分享) -->
+  <meta property="og:title" content="Paper - 轻量级微信公众号 Markdown 编辑器" />
+  <meta property="og:description" content="现代化三栏布局，实时 Markdown 预览，支持信息卡片，预览区与微信公众号编辑器等宽，所见即所得" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="favicon.svg" />
+  
+  <!-- Twitter Card 标签 -->
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Paper - 轻量级微信公众号 Markdown 编辑器" />
+  <meta name="twitter:description" content="现代化三栏布局，实时 Markdown 预览，支持信息卡片，所见即所得" />
+  
+  <!-- 主题颜色 -->
+  <meta name="theme-color" content="#007acc" />
+  
+  <!-- 浏览器兼容性 -->
+  <meta name="format-detection" content="telephone=no" />
+  <meta name="msapplication-tap-highlight" content="no" />
+  
+  <!-- 引入 normalize.css，用于重置默认浏览器样式 -->
+  <link href="https://cdn.jsdelivr.net/npm/normalize.css@8/normalize.css" rel="stylesheet" />
+  <!-- 内联样式，定义全局 CSS 变量和排版样式 -->
+  <style>
+    /* CSS 变量定义颜色与行高 */
+    :root {
+      --primary: #007acc;           /* 主题蓝色 */
+      --primary-dark: #005a9e;      /* 深蓝色 */
+      --bg-main: #ffffff;           /* 主背景 */
+      --bg-secondary: #f8f9fa;      /* 次要背景 */
+      --bg-tertiary: #f1f3f4;       /* 第三级背景 */
+      --bg-editor: #ffffff;         /* 编辑器背景 */
+      --bg-preview: #ffffff;        /* 预览区背景 */
+      --text-main: #333333;         /* 主文本颜色 */
+      --text-light: #666666;        /* 次级文本颜色 */
+      --text-dark: #262626;         /* 深色文本 */
+      --border-color: #e1e4e8;      /* 边框颜色 */
+      --hover-bg: #f6f8fa;          /* 悬停背景 */
+      --success: #52c41a;           /* 成功色 */
+      --warning: #faad14;           /* 警告色 */
+      --line-height: 2;             /* 行高倍数 */
+    }
+
+    /* 全局重置 */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    /* body 基本布局与字体 */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: var(--text-main);
+      background: var(--bg-main);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* 主容器 */
+    .main-container {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      gap: 8px;
+      padding: 8px;
+    }
+
+    /* 编辑器区域 */
+    .editor-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-editor);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .editor-tabs {
+      height: 35px;
+      background: var(--bg-tertiary);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .editor-tab {
+      height: 100%;
+      padding: 0 1rem;
+      display: flex;
+      align-items: center;
+      background: var(--bg-tertiary);
+      cursor: pointer;
+      font-size: 13px;
+      position: relative;
+      color: var(--text-main);
+    }
+
+    .editor-tab:first-child {
+      border-top-left-radius: 7px;
+    }
+
+    .editor-tab.active {
+      background: var(--bg-tertiary);
+    }
+
+    .editor-date {
+      padding: 0 1rem;
+      font-size: 12px;
+      color: var(--text-light);
+      display: flex;
+      align-items: center;
+      height: 100%;
+    }
+
+    /* Markdown 编辑器 */
+    .editor-content {
+      flex: 1; /* Should take remaining vertical space in .editor-container */
+      display: flex;
+      flex-direction: column;
+      /* height: calc(100vh - 35px - 24px); */ /* REMOVED this explicit height */
+      min-height: 400px; /* Kept for very small viewports, though flex should manage */
+      overflow: hidden; /* Added to ensure it acts as a proper container */
+    }
+
+    .markdown-editor {
+      flex: 1;
+      border: none;
+      outline: none;
+      resize: none;
+      padding: 1.5rem;
+      font-size: 14px;
+      line-height: 1.6;
+      background: var(--bg-editor);
+      color: var(--text-main);
+      font-family: 'Fira Code', 'Consolas', monospace;
+      overflow-y: auto;
+    }
+
+    /* CodeMirror 编辑器样式 */
+    .CodeMirror {
+      /* height: auto; */ /* Removed */
+      /* min-height: 100%; */ /* Removed */
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: 14px;
+      line-height: 1.6;
+      background: var(--bg-editor);
+      color: var(--text-main);
+      border: none;
+      flex: 1;
+      position: relative; /* Added this line */
+      /* margin-bottom: 4rem !important; */ /* Removed previously */
+    }
+
+    .CodeMirror-scroll {
+      padding: 1.5rem; /* Unified padding, removed large bottom padding here */
+      /* min-height: 100%; */ /* Removed this line */
+    }
+
+    /* New rule or augment existing if CodeMirror has one for .CodeMirror-sizer we can override */
+    .CodeMirror-sizer {
+      position: relative; /* Ensure position context, usually default for sizer */
+      padding-bottom: 8rem !important; /* Add padding to the sizer itself */
+    }
+
+    .CodeMirror-gutters {
+      background: var(--bg-editor);
+      border-right: none;
+    }
+
+    .CodeMirror-linenumber {
+      color: var(--text-light);
+      font-size: 12px;
+    }
+
+    .CodeMirror-cursor {
+      border-left: 2px solid var(--primary);
+    }
+
+    .CodeMirror-selected {
+      background: rgba(0, 122, 204, 0.1);
+    }
+
+    .CodeMirror-focused .CodeMirror-selected {
+      background: rgba(0, 122, 204, 0.2);
+    }
+
+    /* Markdown 语法高亮样式 */
+    .cm-header {
+      color: #d73a49;
+      font-weight: bold;
+    }
+
+    .cm-strong {
+      color: #d73a49;
+      font-weight: bold;
+    }
+
+    .cm-em {
+      color: #6f42c1;
+      font-style: italic;
+    }
+
+    .cm-link {
+      color: #0366d6;
+      text-decoration: underline;
+    }
+
+    .cm-url {
+      color: #032f62;
+    }
+
+    .cm-quote {
+      color: #6a737d;
+      font-style: italic;
+    }
+
+    .cm-code {
+      color: #e36209;
+      background: #f6f8fa;
+      padding: 2px 4px;
+      border-radius: 3px;
+    }
+
+    .cm-comment {
+      color: #6a737d;
+    }
+
+    .cm-list {
+      color: #d73a49;
+    }
+
+    /* 预览区域 */
+    .preview-container {
+      width: 768px;
+      flex-shrink: 0;
+      background: var(--bg-preview);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .preview-header {
+      height: 35px;
+      background: var(--bg-tertiary);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      padding: 0 1rem;
+      font-size: 13px;
+      color: var(--text-main);
+    }
+
+    .preview-content {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      display: flex;
+      justify-content: center;
+      padding: 2rem 0 6rem 0 !important;
+    }
+
+    .preview-inner {
+      width: 578px;
+      padding: 0 2rem 4rem 2rem !important;
+      margin-bottom: 3rem !important;
+    }
+
+    /* 右侧主题面板 */
+    .theme-panel {
+      width: 200px;
+      flex-shrink: 0;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .theme-header {
+      height: 35px;
+      background: var(--bg-tertiary);
+      display: flex;
+      align-items: center;
+      padding: 0 1rem;
+      font-size: 13px;
+      color: var(--text-main);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .theme-content {
+      flex: 1;
+      padding: 1rem 1rem 5rem 1rem;
+      overflow-y: auto;
+    }
+
+    .theme-section {
+      margin-bottom: 1.5rem;
+    }
+
+    .theme-section-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-light);
+      margin-bottom: 0.8rem;
+      text-transform: uppercase;
+    }
+
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+    }
+
+    .color-item {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .color-item:hover {
+      transform: scale(1.1);
+    }
+
+    .color-item.active {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px var(--primary);
+    }
+
+    .color-item.active::after {
+      content: '✓';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 14px;
+      font-weight: bold;
+      text-shadow: 0 0 2px rgba(0,0,0,0.5);
+    }
+
+    /* 预设颜色 */
+    .color-blue { background: #007acc; }
+    .color-green { background: #28a745; }
+    .color-red { background: #dc3545; }
+    .color-yellow { background: #ffc107; }
+    .color-purple { background: #6f42c1; }
+    .color-teal { background: #20c997; }
+    .color-pink { background: #e83e8c; }
+    .color-orange { background: #fd7e14; }
+    .color-gray { background: #6c757d; }
+
+    /* 字体大小控制 */
+    .font-size-control {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .font-size-btn {
+      width: 32px;
+      height: 32px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-main);
+      color: var(--text-main);
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .font-size-btn:hover {
+      background: var(--hover-bg);
+    }
+
+    .font-size-display {
+      flex: 1;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-light);
+    }
+
+    /* Markdown 渲染样式 */
+    .typo {
+      max-width: none;
+      margin: 0 0 5rem 0 !important;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.8;
+      word-wrap: break-word;
+      color: #333;
+      padding-bottom: 4rem !important;
+    }
+
+    .typo p {
+      margin: 16px 0;
+      text-indent: 0;
+    }
+
+    .typo h1, .typo h4, .typo h5, .typo h6 {
+      font-weight: 600;
+      line-height: 1.4;
+      margin: 20px 0 16px 0;
+      color: #333;
+    }
+
+    .typo h1 { 
+      font-size: 22px; 
+      text-align: center;
+      margin: 20px 0;
+    }
+    
+    .typo h2 { 
+      font-size: 20px; 
+      background: #d0d0d0;
+      color: #333;
+      padding: 10px 20px;
+      display: block;
+      margin: 24px auto 20px auto;
+      font-weight: 600;
+      line-height: 1.4;
+      width: fit-content;
+      text-align: center;
+      position: relative;
+    }
+    
+    .typo h3 { 
+      font-size: 17px;
+      background: #f0f0f0;
+      color: #333;
+      padding: 8px 0 8px 12px;
+      border: none;
+      border-left: 4px solid #888888;
+      display: block;
+      margin: 18px 0 14px 0;
+      font-weight: 600;
+      line-height: 1.4;
+      width: 100%;
+    }
+    
+    .typo h4 { font-size: 16px; }
+    .typo h5 { font-size: 15px; }
+    .typo h6 { font-size: 14px; }
+
+    .typo hr {
+      border: none;
+      border-top: 1px dashed #aaa;
+      margin: 24px 0;
+    }
+
+    .typo a {
+      color: var(--primary);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(0,122,204,0.3);
+      transition: border-bottom-color .2s;
+    }
+
+    .typo a:hover {
+      border-bottom-color: rgba(0,122,204,0.8);
+    }
+
+    /* 引用链接样式 */
+    .typo .reference-link {
+      color: var(--primary);
+      text-decoration: none;
+      border-bottom: none;
+      vertical-align: super;
+      font-size: 0.8em;
+      font-weight: bold;
+      padding: 0 2px;
+    }
+
+    .typo .reference-link:hover {
+      background: rgba(0,122,204,0.1);
+      border-radius: 2px;
+    }
+
+    /* 引用列表样式 */
+    .typo .references {
+      margin-top: 40px;
+      border-top: 1px solid #e1e4e8;
+      padding-top: 20px;
+    }
+
+    .typo .references h4 {
+      color: #666;
+      font-size: 16px;
+      margin-bottom: 16px;
+    }
+
+    .typo .references ol {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .typo .references li {
+      margin: 8px 0;
+      font-size: 13px;
+      color: #666;
+      line-height: 1.5;
+      word-break: break-all;
+    }
+
+    .typo ul, .typo ol {
+      margin: 16px 0 16px 2em;
+      padding: 0;
+    }
+
+    .typo li {
+      margin: 8px 0;
+    }
+
+    .typo blockquote {
+      margin: 8px 0;
+      padding: 12px 16px;
+      border: none;
+      color: #666;
+      background: #f5f5f5;
+      border-radius: 8px;
+      font-style: normal;
+    }
+
+    .typo blockquote p {
+      margin: 0;
+    }
+
+    /* 信息卡片样式 */
+    .typo .info-card {
+      background: #D0F9D0;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin: 20px 0;
+      position: relative;
+    }
+
+    .typo .info-card .card-title {
+      color: #d32f2f;
+      font-weight: bold;
+      font-size: 14px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+    }
+
+    .typo .info-card .card-title::before {
+      content: '💡';
+      margin-right: 8px;
+      font-size: 14px;
+    }
+
+    .typo .info-card p {
+      margin: 8px 0;
+      line-height: 1.8;
+      color: #2e2e2e;
+    }
+
+    .typo .info-card p:first-child {
+      margin-top: 0;
+    }
+
+    .typo .info-card p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* 信息卡片内的图片样式 */
+    .typo .info-card img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      margin: 12px 0;
+      display: block;
+    }
+
+    /* 浅橙色卡片样式 */
+    .typo .orange-card {
+      background: #FFF3E0;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin: 20px 0;
+      border: none;
+    }
+
+    .typo .orange-card p {
+      margin: 8px 0;
+      line-height: 1.8;
+      color: #333;
+    }
+
+    .typo .orange-card p:first-child {
+      margin-top: 0;
+    }
+
+    .typo .orange-card p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* 浅蓝色卡片样式 */
+    .typo .blue-card {
+      background: #E3F2FD;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin: 20px 0;
+      border: none;
+    }
+
+    .typo .blue-card p {
+      margin: 8px 0;
+      line-height: 1.8;
+      color: #333;
+    }
+
+    .typo .blue-card p:first-child {
+      margin-top: 0;
+    }
+
+    .typo .blue-card p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* 状态栏 */
+    .status-bar {
+      height: 24px;
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1rem;
+      font-size: 12px;
+      color: var(--text-light);
+    }
+
+    .status-left, .status-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .status-center {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      font-size: 10px;
+      color: #999;
+    }
+
+    /* GitHub 图标样式 */
+    .github-icon-container {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 1rem;
+      padding: 0;
+    }
+
+    .github-icon-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--text-main);
+      color: white;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .github-icon-link:hover {
+      background: var(--primary);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,122,204,0.3);
+    }
+
+    .github-icon-link svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    /* 操作按钮 */
+    .action-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      align-items: center;
+      justify-content: center;
+      height: calc(100% - 2rem);
+      padding: 1rem;
+    }
+
+    .action-btn {
+      padding: 0.8rem 1rem;
+      border: none;
+      border-radius: 6px;
+      background: var(--primary);
+      color: white;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 2px 8px rgba(0,122,204,0.3);
+      width: 140px;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .action-btn:hover {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,122,204,0.4);
+    }
+
+    .action-btn.secondary {
+      background: var(--bg-main);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .action-btn.secondary:hover {
+      background: var(--hover-bg);
+    }
+
+    /* 五彩纸屑画布 */
+    #confetti-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* 模态框 */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.7);
+      z-index: 10000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-content {
+      background: var(--bg-main);
+      padding: 2rem;
+      width: 80%;
+      max-width: 800px;
+      height: 70%;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      color: var(--text-main);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      color: var(--text-main);
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-light);
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+
+    .close-btn:hover {
+      background: var(--hover-bg);
+      color: var(--text-main);
+    }
+
+    .modal-body {
+      flex: 1;
+      overflow: auto;
+    }
+
+    #htmlSource {
+      width: 100%;
+      height: 100%;
+      font-family: monospace;
+      font-size: 13px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 1rem;
+      resize: none;
+      outline: none;
+      background: var(--bg-tertiary);
+      color: var(--text-main);
+    }
+
+    /* 响应式设计 */
+    @media (max-width: 1400px) {
+      .theme-panel {
+        display: none;
+      }
+    }
+
+    @media (max-width: 1200px) {
+      .preview-container {
+        width: 600px;
+      }
+      .preview-inner {
+        width: 480px;
+      }
+    }
+
+    @media (max-width: 1000px) {
+      .main-container {
+        flex-direction: column;
+      }
+      .preview-container {
+        width: 100%;
+      }
+      .preview-inner {
+        width: 578px;
+        max-width: calc(100% - 4rem);
+      }
+    }
+
+    .typo img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 16px auto;
+      border-radius: 8px;
+      box-sizing: border-box;
+    }
+
+    /* 列表中的图片特殊处理 */
+    .typo li img,
+    .typo ul img,
+    .typo ol img {
+      max-width: 100%;
+      display: block;
+      margin: 0.1em auto 0.5em;
+      border-radius: 8px;
+      border: 1px solid rgba(0, 0, 0, 0.04);
+    }
+
+    /* 横屏滑动幻灯片样式 - 基于微信公众号有效实现 */
+    .typo section[style*="overflow-x: scroll"] {
+      scrollbar-width: thin;
+      scrollbar-color: #ddd transparent;
+    }
+
+    .typo section[style*="overflow-x: scroll"]::-webkit-scrollbar {
+      height: 6px;
+    }
+
+    .typo section[style*="overflow-x: scroll"]::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 3px;
+    }
+
+    .typo section[style*="overflow-x: scroll"]::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 3px;
+    }
+
+    .typo section[style*="overflow-x: scroll"]::-webkit-scrollbar-thumb:hover {
+      background: #999;
+    }
+
+    /* 修复预览区滑动幻灯片显示问题 - 让每张图片完整显示 */
+    .typo section[style*="overflow-x: scroll"] section[style*="display: inline-block"][style*="width: 90%"] {
+      width: 100% !important;
+      margin-right: 0 !important;
+      flex-shrink: 0;
+    }
+
+    .typo section[style*="overflow-x: scroll"] {
+      display: flex !important;
+      overflow-x: auto !important;
+      overflow-y: hidden !important;
+      scroll-snap-type: x mandatory;
+    }
+
+    .typo section[style*="overflow-x: scroll"] section[style*="display: inline-block"] {
+      scroll-snap-align: start;
+    }
+
+    /* 更精确的修复 - 针对图片容器 */
+    .preview-inner section[style*="overflow-x: scroll"] section[style*="width: 90%"] {
+      width: calc(100% - 20px) !important;
+      margin-right: 20px !important;
+      min-width: calc(100% - 20px) !important;
+    }
+
+    .preview-inner section[style*="overflow-x: scroll"] {
+      scroll-behavior: smooth;
+    }
+
+    .typo code {
+      font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Source Code Pro', 'Consolas', 'Courier New', monospace;
+      background: #f1f3f4;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 13px;
+      color: #d73a49;
+      border: none;
+    }
+
+    .typo pre {
+      background: #f5f5f5;
+      color: #333;
+      padding: 0;
+      overflow: auto;
+      font-size: 13px;
+      margin: 16px 0;
+      border: none;
+      border-radius: 8px;
+      position: relative;
+    }
+
+    .typo pre code {
+      background: none;
+      padding: 8px 16px 16px 16px;
+      color: inherit;
+      display: block;
+      font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Source Code Pro', 'Consolas', 'Courier New', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      overflow-x: auto;
+      white-space: pre;
+      word-wrap: normal;
+      word-break: normal;
+    }
+
+    /* Kimbie Light 代码高亮样式 */
+    .typo pre code .hljs-comment,
+    .typo pre code .hljs-quote,
+    .typo pre .hljs-comment,
+    .typo pre .hljs-quote {
+      color: #a57a4c !important;
+      font-style: italic;
+    }
+
+    .typo pre .hljs-keyword,
+    .typo pre .hljs-selector-tag,
+    .typo pre .hljs-subst {
+      color: #dc3958 !important;
+      font-weight: bold;
+    }
+
+    .typo pre .hljs-number,
+    .typo pre .hljs-literal,
+    .typo pre .hljs-variable,
+    .typo pre .hljs-template-variable,
+    .typo pre .hljs-tag .hljs-attr {
+      color: #f79a32 !important;
+    }
+
+    .typo pre .hljs-string,
+    .typo pre .hljs-doctag {
+      color: #889b4a !important;
+    }
+
+    .typo pre .hljs-title,
+    .typo pre .hljs-section,
+    .typo pre .hljs-selector-id {
+      color: #f06431 !important;
+      font-weight: bold;
+    }
+
+    .typo pre .hljs-type,
+    .typo pre .hljs-class .hljs-title {
+      color: #f79a32 !important;
+      font-weight: bold;
+    }
+
+    .typo pre .hljs-tag,
+    .typo pre .hljs-name,
+    .typo pre .hljs-attribute {
+      color: #dc3958 !important;
+      font-weight: normal;
+    }
+
+    .typo pre .hljs-regexp,
+    .typo pre .hljs-link {
+      color: #889b4a !important;
+    }
+
+    .typo pre .hljs-symbol,
+    .typo pre .hljs-bullet {
+      color: #f79a32 !important;
+    }
+
+    .typo pre .hljs-built_in,
+    .typo pre .hljs-builtin-name {
+      color: #dc3958 !important;
+    }
+
+    .typo pre .hljs-meta {
+      color: #a57a4c !important;
+    }
+
+    .typo pre .hljs-deletion {
+      background: #dc3958 !important;
+    }
+
+    .typo pre .hljs-addition {
+      background: #889b4a !important;
+    }
+
+    .typo pre .hljs-emphasis {
+      font-style: italic;
+    }
+
+    .typo pre .hljs-strong {
+      font-weight: bold;
+    }
+
+    .typo table {
+      width: 100%;
+      margin: 24px 0;
+      border-collapse: collapse;
+    }
+
+    .typo table th,
+    .typo table td {
+      border: 1px solid #e5e5e5;
+      padding: 8px 12px;
+      text-align: left;
+    }
+
+    .typo table th {
+      background: #f5f7f9;
+      font-weight: 600;
+    }
+  </style>
+  <!-- 引入 Showdown，用于将 Markdown 转换为 HTML -->
+  <script src="https://cdn.jsdelivr.net/npm/showdown@2.1.0/dist/showdown.min.js"></script>
+  <!-- 引入 CodeMirror 用于 Markdown 语法高亮 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/github.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/markdown/markdown.min.js"></script>
+  <!-- 引入 highlight.js 用于代码高亮 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/cpp.min.js"></script>
+  <!-- 引入 Canvas-Confetti，用于点击复制后动画效果 -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+  <!-- 五彩纸屑动画画布 -->
+  <canvas id="confetti-canvas"></canvas>
+  
+  <!-- 主容器 -->
+  <div class="main-container">
+    <!-- 编辑器容器 -->
+    <div class="editor-container">
+      <!-- 编辑器标签页 -->
+      <div class="editor-tabs">
+        <div class="editor-tab active">
+          <span>编辑区</span>
+        </div>
+        <div class="editor-date" id="editorDate">
+          <!-- 日期将通过JavaScript动态更新 -->
+        </div>
+      </div>
+
+      <!-- 编辑器内容 -->
+      <div class="editor-content">
+        <textarea class="markdown-editor" id="markdown" placeholder="在此输入 Markdown 内容...
+
+支持实时预览，编辑完成后可一键复制到微信公众号。" spellcheck="false"></textarea>
+      </div>
+    </div>
+
+    <!-- 预览容器 -->
+    <div class="preview-container">
+      <div class="preview-header">预览区</div>
+      <div class="preview-content">
+        <div class="preview-inner">
+          <article id="preview" class="typo"></article>
+        </div>
+      </div>
+    </div>
+
+    <!-- 发布面板 -->
+    <div class="theme-panel">
+      <div class="theme-header">发布区</div>
+      <div class="theme-content">
+        <!-- 操作按钮 -->
+        <div class="action-buttons">
+          <!-- GitHub 图标链接 -->
+          <div class="github-icon-container">
+            <a href="https://github.com/xiaolinbaba/Paper" target="_blank" class="github-icon-link" title="GitHub仓库">
+              <svg width="32" height="32" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+              </svg>
+            </a>
+          </div>
+          
+          <button class="action-btn" id="copyBtn">复制到公众号</button>
+          <button class="action-btn secondary" onclick="window.open('https://mermaid-live.nodejs.cn/edit', '_blank')">Mermaid渲染</button>
+          <button class="action-btn secondary" onclick="window.open('https://mathjax.thus.chat', '_blank')">数学公式渲染</button>
+          <button class="action-btn secondary" onclick="window.open('https://xiaolinbaba.notion.site/Markdown-bcf20a9190db4b208dc137f755788405', '_blank')">Markdown语法查询</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 状态栏 -->
+  <div class="status-bar">
+    <div class="status-left">
+      <span id="wordCount">字数: 0</span>
+      <span id="charCount">字符: 0</span>
+      <span id="saveStatus">已保存</span>
+    </div>
+    <div class="status-center">
+      <span>Copyright © 2025-2030 nabin-cn,xiaolinbaba. All Rights Reserved.</span>
+    </div>
+    <div class="status-right">
+      <span>Markdown</span>
+      <span>UTF-8</span>
+    </div>
+  </div>
+
+  <script>
+    // 等待 DOM 加载完成后执行脚本
+    document.addEventListener('DOMContentLoaded', () => {
+      // 等待所有库加载完成
+      function waitForLibraries() {
+        return new Promise((resolve) => {
+          const checkLibraries = () => {
+            const hljs = !!window.hljs;
+            const showdown = !!window.showdown;
+            const codemirror = !!window.CodeMirror;
+            
+            console.log('Library status:', { hljs, showdown, codemirror });
+            
+            if (hljs && showdown && codemirror) {
+              resolve();
+            } else {
+              setTimeout(checkLibraries, 100);
+            }
+          };
+          checkLibraries();
+        });
+      }
+      
+      // 等待库加载完成后初始化
+      waitForLibraries().then(() => {
+        console.log('All libraries loaded, initializing...');
+        
+        // 初始化 highlight.js
+        if (window.hljs) {
+          hljs.configure({
+            ignoreUnescapedHTML: true
+          });
+          console.log('highlight.js loaded successfully');
+        } else {
+          console.error('highlight.js not loaded');
+        }
+        
+        // 初始化编辑器
+        initializeEditor();
+      });
+      
+      function initializeEditor() {
+        // 初始化 Showdown 转换器
+        const converter = new showdown.Converter({ 
+          tables: true, 
+          ghCodeBlocks: true, 
+          strikethrough: true, 
+          tasklists: true,
+          emoji: true,
+          underline: true,
+          ghCompatibleHeaderId: true,
+          parseImgDimensions: true
+        });
+        
+        // DOM 元素引用
+        const mdInput = document.getElementById('markdown');
+        const preview = document.getElementById('preview');
+        const copyBtn = document.getElementById('copyBtn');
+        const confettiCanvas = document.getElementById('confetti-canvas');
+        const wordCount = document.getElementById('wordCount');
+        const charCount = document.getElementById('charCount');
+        const saveStatus = document.getElementById('saveStatus');
+        const editorDate = document.getElementById('editorDate');
+
+        let myConfetti;
+        let autoSaveTimer;
+        let codeMirrorEditor;
+        let isRendering = false; // 添加渲染状态标记
+
+        // 初始化 CodeMirror 编辑器
+        codeMirrorEditor = CodeMirror.fromTextArea(mdInput, {
+          mode: 'markdown',
+          theme: 'github',
+          lineNumbers: true, // 将这里从 false 改为 true
+          lineWrapping: true,
+          autofocus: true,
+          viewportMargin: Infinity,
+          placeholder: '在此输入 Markdown 内容...\n\n支持实时预览，编辑完成后可一键复制到微信公众号。',
+          extraKeys: {
+            'Ctrl-S': function(cm) {
+              // 手动保存快捷键
+              localStorage.setItem('md_editor_draft', cm.getValue());
+              localStorage.setItem('md_editor_save_time', new Date().toLocaleString());
+              saveStatus.textContent = '手动保存成功';
+              setTimeout(() => {
+                saveStatus.textContent = '已保存';
+              }, 2000);
+            },
+            'Ctrl-Enter': function(cm) {
+              // 复制快捷键
+              copyBtn.click();
+            }
+          }
+        });
+
+        // 强制刷新 CodeMirror 尺寸
+        setTimeout(() => {
+          codeMirrorEditor.refresh();
+        }, 100);
+
+        // 窗口大小改变时刷新编辑器
+        window.addEventListener('resize', () => {
+          setTimeout(() => {
+            codeMirrorEditor.refresh();
+          }, 100);
+        });
+
+        // 重新定义获取编辑器内容的方法
+        function getEditorValue() {
+          return codeMirrorEditor.getValue();
+        }
+
+        function setEditorValue(value) {
+          codeMirrorEditor.setValue(value);
+        }
+
+        // 初始化 confetti 实例
+        if (window.confetti && typeof window.confetti.create === 'function') {
+          myConfetti = window.confetti.create(confettiCanvas, { resize: true, useWorker: true });
+        } else if (window.confetti) {
+          myConfetti = window.confetti;
+        }
+        
+        // 更新日期显示
+        function updateDate() {
+          const now = new Date();
+          const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+          const year = now.getFullYear();
+          const month = String(now.getMonth() + 1).padStart(2, '0');
+          const day = String(now.getDate()).padStart(2, '0');
+          const weekday = weekdays[now.getDay()];
+          
+          const dateString = `${year}-${month}-${day} ${weekday}`;
+          editorDate.textContent = dateString;
+        }
+        
+        // 初始化日期显示
+        updateDate();
+        
+        // 每分钟更新一次日期（以防跨日）
+        setInterval(updateDate, 60000);
+        
+        // 统计文本信息
+        function updateStats() {
+          const text = getEditorValue();
+          const characters = text.length;
+          
+          // 改进的字数统计逻辑
+          let words = 0;
+          if (text.trim()) {
+            // 统计中文字符数（包括中文标点）
+            const chineseChars = (text.match(/[\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef]/g) || []).length;
+            
+            // 统计英文单词数（移除中文字符后按空白分割）
+            const englishText = text.replace(/[\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef]/g, '');
+            const englishWords = englishText.trim() ? englishText.trim().split(/\s+/).filter(word => word.length > 0).length : 0;
+            
+            // 总字数 = 中文字符数 + 英文单词数
+            words = chineseChars + englishWords;
+          }
+          
+          wordCount.textContent = `字数: ${words}`;
+          charCount.textContent = `字符: ${characters}`;
+        }
+        
+        // 处理引用链接
+        function processReferences(html) {
+          const references = [];
+          let refIndex = 1;
+          
+          // 在链接后面添加引用标记，保留原链接
+          html = html.replace(/<a href="([^"]+)"[^>]*>([^<]+)<\/a>/g, (match, url, text) => {
+            references.push({ url, text });
+            return `${match}<span class="reference-link">[${refIndex++}]</span>`;
+          });
+          
+          // 如果有引用，添加引用列表
+          if (references.length > 0) {
+            let referencesHtml = '<div class="references"><h4>引用链接</h4><ol>';
+            references.forEach((ref, index) => {
+              referencesHtml += `<li>${ref.text}: ${ref.url}</li>`;
+            });
+            referencesHtml += '</ol></div>';
+            html += referencesHtml;
+          }
+          
+          return html;
+        }
+
+        // 处理信息卡片
+        function processInfoCards(markdownText) {
+          // 先保护代码块内容
+          const codeBlocks = [];
+          let codeBlockIndex = 0;
+          
+          // 匹配代码块（包括行内代码和多行代码块）
+          markdownText = markdownText.replace(/```[\s\S]*?```|`[^`]+`/g, (match) => {
+            const placeholder = `__CODE_BLOCK_${codeBlockIndex}__`;
+            codeBlocks[codeBlockIndex] = match;
+            codeBlockIndex++;
+            return placeholder;
+          });
+          
+          // 处理 :::info 标记的信息卡片
+          markdownText = markdownText.replace(/:::info\s+(.*?)\n([\s\S]*?):::/g, (match, title, content) => {
+            // 将内容转换为HTML格式的占位符，稍后会被替换
+            return `<div class="info-card-placeholder" data-title="${title}" data-content="${encodeURIComponent(content.trim())}"></div>`;
+          });
+          
+          // 处理 :::orange 标记的浅橙色卡片（无标题）
+          markdownText = markdownText.replace(/:::orange\n([\s\S]*?):::/g, (match, content) => {
+            return `<div class="orange-card-placeholder" data-content="${encodeURIComponent(content.trim())}"></div>`;
+          });
+          
+          // 处理 :::blue 标记的浅蓝色卡片（无标题）
+          markdownText = markdownText.replace(/:::blue\n([\s\S]*?):::/g, (match, content) => {
+            return `<div class="blue-card-placeholder" data-content="${encodeURIComponent(content.trim())}"></div>`;
+          });
+          
+          // 恢复代码块内容
+          codeBlocks.forEach((codeBlock, index) => {
+            markdownText = markdownText.replace(`__CODE_BLOCK_${index}__`, codeBlock);
+          });
+          
+          return markdownText;
+        }
+
+        // 处理信息卡片占位符
+        function processInfoCardPlaceholders(html) {
+          // 处理 info 卡片
+          html = html.replace(/<div class="info-card-placeholder" data-title="([^"]*)" data-content="([^"]*)"><\/div>/g, (match, title, encodedContent) => {
+            const content = decodeURIComponent(encodedContent);
+            let processedContent = converter.makeHtml(content);
+            
+            // 清理内部的段落标签，使用简单的换行
+            processedContent = processedContent.replace(/<p>/g, '').replace(/<\/p>/g, '<br><br>');
+            processedContent = processedContent.replace(/<br><br>$/, ''); // 移除末尾的换行
+            
+            // 为信息卡片内的图片添加样式限制
+            processedContent = processedContent.replace(/<img([^>]*)>/g, '<img$1 style="max-width: 100%; height: auto; display: block; margin: 8px 0; border-radius: 6px;">');
+            
+            // 使用表格来创建带背景色的卡片效果（微信公众号完全支持）
+            return `<table style="width: 100%; margin: 20px 0; border-collapse: collapse;">
+              <tr>
+                <td style="background-color: #D0F9D0; border: none; border-radius: 12px; padding: 8px 16px 12px 16px;">
+                  <p style="margin: 0 0 6px 0; color: #d32f2f; font-weight: bold; font-size: 16px;">
+                    💡 ${title}
+                  </p>
+                  <p style="margin: 0; color: #333; line-height: 1.6;">
+                    ${processedContent}
+                  </p>
+                </td>
+              </tr>
+            </table>`;
+          });
+          
+          // 处理 orange 卡片（无标题）
+          html = html.replace(/<div class="orange-card-placeholder" data-content="([^"]*)"><\/div>/g, (match, encodedContent) => {
+            const content = decodeURIComponent(encodedContent);
+            let processedContent = converter.makeHtml(content);
+            
+            // 清理内部的段落标签，使用简单的换行
+            processedContent = processedContent.replace(/<p>/g, '').replace(/<\/p>/g, '<br><br>');
+            processedContent = processedContent.replace(/<br><br>$/, ''); // 移除末尾的换行
+            
+            // 使用表格来创建浅橙色卡片效果（微信公众号完全支持）
+            return `<table style="width: 100%; margin: 20px 0; border-collapse: collapse;">
+              <tr>
+                <td style="background-color: #FFF3E0; border: none; border-radius: 8px; padding: 12px 16px;">
+                  <p style="margin: 0; color: #333; line-height: 1.8;">
+                    ${processedContent}
+                  </p>
+                </td>
+              </tr>
+            </table>`;
+          });
+          
+          // 处理 blue 卡片（无标题）
+          html = html.replace(/<div class="blue-card-placeholder" data-content="([^"]*)"><\/div>/g, (match, encodedContent) => {
+            const content = decodeURIComponent(encodedContent);
+            let processedContent = converter.makeHtml(content);
+            
+            // 清理内部的段落标签，使用简单的换行
+            processedContent = processedContent.replace(/<p>/g, '').replace(/<\/p>/g, '<br><br>');
+            processedContent = processedContent.replace(/<br><br>$/, ''); // 移除末尾的换行
+            
+            // 使用表格来创建浅蓝色卡片效果（微信公众号完全支持）
+            return `<table style="width: 100%; margin: 20px 0; border-collapse: collapse;">
+              <tr>
+                <td style="background-color: #E3F2FD; border: none; border-radius: 8px; padding: 12px 16px;">
+                  <p style="margin: 0; color: #333; line-height: 1.8;">
+                    ${processedContent}
+                  </p>
+                </td>
+              </tr>
+            </table>`;
+          });
+          
+          return html;
+        }
+
+        // 处理横屏滑动幻灯片
+        function processSlideshow(markdownText) {
+          // 先保护代码块内容
+          const codeBlocks = [];
+          let codeBlockIndex = 0;
+          
+          // 匹配代码块（包括行内代码和多行代码块）
+          markdownText = markdownText.replace(/```[\s\S]*?```|`[^`]+`/g, (match) => {
+            const placeholder = `__CODE_BLOCK_${codeBlockIndex}__`;
+            codeBlocks[codeBlockIndex] = match;
+            codeBlockIndex++;
+            return placeholder;
+          });
+          
+          // 匹配 <![alt](url),![alt](url)> 语法，但不匹配行内代码中的内容
+          // 要求前面是行首、空白字符或换行符，后面是空白字符、换行符或行尾
+          const slideshowRegex = /(^|\s|>\s*)\n?<!\[([^\]]*)\]\(([^)]+)\)(?:,\s*!\[([^\]]*)\]\(([^)]+)\))+>(?=\s|$|\n)/gm;
+          
+          markdownText = markdownText.replace(slideshowRegex, (match, prefix, ...groups) => {
+            // 提取所有图片
+            const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+            const images = [];
+            let imageMatch;
+            
+            while ((imageMatch = imageRegex.exec(match)) !== null) {
+              images.push({
+                alt: imageMatch[1] || '',
+                url: imageMatch[2]
+              });
+            }
+            
+            if (images.length === 0) return match;
+            
+            // 生成唯一ID
+            const slideshowId = 'slideshow-' + Math.random().toString(36).substr(2, 9);
+            
+            // 创建滑动幻灯片HTML（基于微信公众号有效实现）
+            let slideshowHTML = '<section style="box-sizing: border-box; font-size: 16px; margin: 20px 0;">';
+            slideshowHTML += '<section style="font-family: 微软雅黑; font-size: 16px;">';
+            slideshowHTML += '<section style="margin: 0px auto; box-sizing: border-box; width: 100%;">';
+            slideshowHTML += '<section style="margin: 0px auto; text-align: center;">';
+            slideshowHTML += '<section style="display: inline-block; width: 100%;">';
+            
+            // 核心滚动容器
+            slideshowHTML += '<section style="overflow-x: scroll; overflow-y: hidden; -webkit-overflow-scrolling: touch; white-space: nowrap; width: 100%; text-align: center;">';
+            
+            images.forEach((img, index) => {
+              slideshowHTML += '<section style="display: inline-block; width: 90%; margin-right: 10px; vertical-align: top;">';
+              slideshowHTML += `<img style="display: block; width: 100%; height: auto; margin: 0.1em auto 0.2em; border: 1px solid rgba(0, 0, 0, 0.04); border-radius: 8px; vertical-align: top;" title="${img.alt || 'picture'}" alt="${img.alt || 'picture'}" src="${img.url}">`;
+              slideshowHTML += `<p style="margin: 0; font-size: 12px; color: #333; text-align: center; white-space: normal; line-height: 1.2;">${img.alt || 'picture'}</p>`;
+              slideshowHTML += '</section>';
+            });
+            
+            slideshowHTML += '</section>';
+            slideshowHTML += '</section>';
+            slideshowHTML += '</section>';
+            slideshowHTML += '</section>';
+            slideshowHTML += '</section>';
+            slideshowHTML += '<section style="text-align: center; margin: 4px 0 0 0; padding: 0;"><p style="font-size: 12px; color: #333; text-align: center; margin: 0; padding: 0; line-height: 1.5;">&lt;&lt;&lt; 左右滑动看更多 &gt;&gt;&gt;</p></section>';
+            slideshowHTML += '</section>';
+            
+            return prefix + slideshowHTML;
+          });
+          
+          // 恢复代码块内容
+          codeBlocks.forEach((codeBlock, index) => {
+            markdownText = markdownText.replace(`__CODE_BLOCK_${index}__`, codeBlock);
+          });
+          
+          return markdownText;
+        }
+
+        // 渲染 Markdown
+        function render() { 
+          isRendering = true; // 开始渲染
+          console.log('Starting render...');
+          let markdownText = getEditorValue();
+          console.log('Original markdown length:', markdownText.length);
+          
+          // 保存当前滚动位置
+          const previewContent = document.querySelector('.preview-content');
+          const currentScrollTop = previewContent.scrollTop;
+          
+          // 处理横屏滑动幻灯片（在Markdown转换前）
+          markdownText = processSlideshow(markdownText);
+          
+          // 先处理信息卡片（在Markdown转换前）
+          markdownText = processInfoCards(markdownText);
+          
+          console.log('Converting markdown to HTML...');
+          let html = converter.makeHtml(markdownText);
+          console.log('HTML conversion complete, length:', html.length);
+          
+          // 处理信息卡片占位符
+          html = processInfoCardPlaceholders(html);
+          
+          // 处理引用链接
+          html = processReferences(html);
+          
+          console.log('Setting preview innerHTML...');
+          preview.innerHTML = html;
+          
+          // 恢复滚动位置
+          previewContent.scrollTop = currentScrollTop;
+          
+          // 应用代码高亮 - 使用更短的延迟并优化处理
+          setTimeout(() => {
+            console.log('Applying syntax highlighting...');
+            if (window.hljs) {
+              const codeBlocks = preview.querySelectorAll('pre code');
+              console.log('Found code blocks:', codeBlocks.length);
+              codeBlocks.forEach((block, index) => {
+                // 检查是否已经高亮过
+                if (block.hasAttribute('data-highlighted')) {
+                  return;
+                }
+                
+                // 清除之前的高亮
+                block.removeAttribute('data-highlighted');
+                block.className = block.className.replace(/hljs[^\s]*/g, '').trim();
+                
+                // 尝试检测语言
+                const text = block.textContent;
+                if (text.includes('def ') || text.includes('import ') || text.includes('print(')) {
+                  block.className = 'language-python';
+                }
+                
+                console.log(`Highlighting block ${index}:`, block.className);
+                // 应用新的高亮
+                try {
+                  hljs.highlightElement(block);
+                  console.log(`Block ${index} highlighted successfully`);
+                } catch (e) {
+                  console.error(`Error highlighting block ${index}:`, e);
+                }
+              });
+              
+              // 添加Mac样式的SVG圆点
+              const preBlocks = preview.querySelectorAll('pre');
+              preBlocks.forEach((pre, index) => {
+                // 检查是否已经添加了Mac样式
+                if (!pre.querySelector('.mac-sign')) {
+                  // 创建Mac样式的SVG元素
+                  const macSign = document.createElement('span');
+                  macSign.className = 'mac-sign';
+                  macSign.style.cssText = 'display: flex; padding: 12px 12px 0;';
+                  macSign.innerHTML = `<svg viewBox="0 0 450 130" height="13px" width="45px" y="0px" x="0px" version="1.1" xmlns="http://www.w3.org/2000/svg">
+                    <ellipse fill="rgb(237,108,96)" stroke-width="2" stroke="rgb(220,60,54)" ry="52" rx="50" cy="65" cx="50"></ellipse>
+                    <ellipse fill="rgb(247,193,81)" stroke-width="2" stroke="rgb(218,151,33)" ry="52" rx="50" cy="65" cx="225"></ellipse>
+                    <ellipse fill="rgb(100,200,86)" stroke-width="2" stroke="rgb(27,161,37)" ry="52" rx="50" cy="65" cx="400"></ellipse>
+                  </svg>`;
+                  
+                  // 将SVG插入到pre元素的开头
+                  pre.insertBefore(macSign, pre.firstChild);
+                  console.log(`Added Mac style to code block ${index}`);
+                }
+              });
+            } else {
+              console.error('hljs not available during render');
+            }
+            
+            // 再次恢复滚动位置（防止代码高亮后位置改变）
+            previewContent.scrollTop = currentScrollTop;
+            
+            // 渲染完成
+            isRendering = false;
+          }, 10);
+          
+          updateStats();
+          scheduleAutoSave();
+        }
+        
+        // 事件监听器
+        let isTyping = false;
+        let typingTimer;
+        
+        // 智能渲染策略
+        codeMirrorEditor.on('change', () => {
+          // 如果正在快速输入，使用快速渲染
+          if (isTyping) {
+            quickRender();
+          } else {
+            // 第一次输入，标记为正在输入状态
+            isTyping = true;
+            quickRender();
+          }
+          
+          // 清除之前的定时器
+          clearTimeout(typingTimer);
+          
+          // 设置新的定时器，如果500ms内没有新的输入，则进行完整渲染
+          typingTimer = setTimeout(() => {
+            isTyping = false;
+            render(); // 完整渲染，包括代码高亮
+          }, 500);
+        });
+        
+        // 快速渲染函数（仅更新文本内容，不处理代码高亮）
+        function quickRender() {
+          isRendering = true; // 开始渲染
+          let markdownText = getEditorValue();
+          
+          // 保存当前滚动位置
+          const previewContent = document.querySelector('.preview-content');
+          const currentScrollTop = previewContent.scrollTop;
+          
+          // 处理横屏滑动幻灯片（在Markdown转换前）
+          markdownText = processSlideshow(markdownText);
+          
+          // 先处理信息卡片（在Markdown转换前）
+          markdownText = processInfoCards(markdownText);
+          
+          let html = converter.makeHtml(markdownText);
+          
+          // 处理信息卡片占位符
+          html = processInfoCardPlaceholders(html);
+          
+          // 处理引用链接
+          html = processReferences(html);
+          
+          preview.innerHTML = html;
+          
+          // 恢复滚动位置
+          previewContent.scrollTop = currentScrollTop;
+          
+          updateStats();
+          
+          // 快速渲染完成
+          isRendering = false;
+        }
+        
+        // 自动保存功能
+        function scheduleAutoSave() {
+          saveStatus.textContent = '保存中...';
+          
+          clearTimeout(autoSaveTimer);
+          autoSaveTimer = setTimeout(() => {
+            localStorage.setItem('md_editor_draft', getEditorValue());
+            localStorage.setItem('md_editor_save_time', new Date().toLocaleString());
+            saveStatus.textContent = '已保存';
+          }, 1000);
+        }
+        
+        // 递归为元素及其子元素注入行内样式
+        function inlineStyles(el) {
+          // 如果是信息卡片的表格，保持原有样式不变
+          if (el.tagName === 'TABLE' && (
+            el.querySelector('td[style*="background-color: #D0F9D0"]') ||
+            el.querySelector('td[style*="background-color: #FFF3E0"]') ||
+            el.querySelector('td[style*="background-color: #E3F2FD"]')
+          )) {
+            // 对于信息卡片表格，只处理子元素
+            Array.from(el.children).forEach(child => inlineStyles(child));
+            return;
+          }
+          
+          // 如果是信息卡片内的td，保持原有样式
+          if (el.tagName === 'TD' && el.getAttribute('style') && (
+            el.getAttribute('style').includes('background-color: #D0F9D0') ||
+            el.getAttribute('style').includes('background-color: #FFF3E0') ||
+            el.getAttribute('style').includes('background-color: #E3F2FD')
+          )) {
+            Array.from(el.children).forEach(child => inlineStyles(child));
+            return;
+          }
+          
+          // 特殊处理滑动幻灯片section元素 - 保持原有行内样式
+          if (el.tagName === 'SECTION' && el.getAttribute('style')) {
+            // 对于已经有行内样式的section元素，保持不变，但处理子元素
+            Array.from(el.children).forEach(child => inlineStyles(child));
+            return;
+          }
+          
+          // 特殊处理包含提示文字的section容器
+          if (el.tagName === 'SECTION' && el.querySelector('p') && el.textContent && el.textContent.includes('左右滑动看更多')) {
+            // 保持提示文字容器的原有样式不变
+            Array.from(el.children).forEach(child => inlineStyles(child));
+            return;
+          }
+          
+          // 特殊处理滑动幻灯片中的段落元素
+          if (el.tagName === 'P' && el.closest('section[style*="overflow-x: scroll"]')) {
+            // 保持滑动幻灯片中段落的原有样式不变
+            Array.from(el.children).forEach(child => inlineStyles(child));
+            return;
+          }
+          
+          // 特殊处理滑动幻灯片的提示文字
+          if (el.tagName === 'P' && el.textContent && el.textContent.includes('左右滑动看更多')) {
+            // 保持提示文字的原有样式不变
+            Array.from(el.children).forEach(child => inlineStyles(child));
+            return;
+          }
+          
+          // 特殊处理Mac样式的SVG元素
+          if (el.classList && el.classList.contains('mac-sign')) {
+            // 保持Mac样式不变，但处理子元素
+            Array.from(el.children).forEach(child => inlineStyles(child));
+            return;
+          }
+          
+          // 特殊处理SVG元素
+          if (el.tagName === 'SVG' || el.tagName === 'ELLIPSE') {
+            // SVG元素保持原有属性不变
+            Array.from(el.children).forEach(child => inlineStyles(child));
+            return;
+          }
+          
+          // 特殊处理图片元素
+          if (el.tagName === 'IMG') {
+            // 检查是否在滑动幻灯片中
+            const isInSlideshow = el.closest('section[style*="overflow-x: scroll"]');
+            // 检查是否在列表中
+            const isInList = el.closest('ul') || el.closest('ol') || el.closest('li');
+            
+            if (isInSlideshow) {
+              el.setAttribute('style', 'display: block; width: 100%; height: auto; margin: 0.1em auto 0.2em; border-radius: 8px; border: 1px solid rgba(0, 0, 0, 0.04);');
+            } else if (isInList) {
+              // 列表中的图片使用参考代码的样式
+              el.setAttribute('style', 'display: block; max-width: 100%; margin: 0.1em auto 0.5em; border-radius: 8px; border: 1px solid rgba(0, 0, 0, 0.04);');
+            } else {
+              el.setAttribute('style', 'max-width: 100%; height: auto; display: block; margin: 16px auto; border-radius: 8px;');
+            }
+            return;
+          }
+          
+          const cs = window.getComputedStyle(el);
+          let styleStr = '';
+          ['font-family','font-size','color','text-align','border','border-left','border-bottom','background','line-height','margin','padding','border-radius','box-shadow','text-shadow','width','display','position','white-space','word-wrap','word-break','overflow-x'].forEach(prop => {
+            const val = cs.getPropertyValue(prop);
+            if (val && val !== 'rgba(0, 0, 0, 0)' && val !== 'transparent' && val !== 'none') {
+              styleStr += `${prop}:${val};`;
+            }
+          });
+          
+          // 特殊处理代码块的Mac样式
+          if (el.tagName === 'PRE') {
+            styleStr += 'position:relative;';
+          }
+          
+          el.setAttribute('style', styleStr);
+          Array.from(el.children).forEach(child => inlineStyles(child));
+        }
+        
+        // 初始渲染
+        render();
+        
+        // 页面加载时自动加载草稿
+        const savedDraft = localStorage.getItem('md_editor_draft');
+        if (savedDraft && savedDraft.trim()) {
+          setEditorValue(savedDraft);
+          render();
+          const saveTime = localStorage.getItem('md_editor_save_time');
+          if (saveTime) {
+            saveStatus.textContent = `已加载草稿`;
+          }
+        } else {
+          // 如果没有草稿，加载默认测试内容
+          const defaultContent = `## Paper 编辑器简介
+
+:::info Paper 编辑器
+Paper 是一款轻量级微信公众号 Markdown 编辑器。现代化三栏布局，实时 Markdown 预览，响应式设计；支持大部分 Markdown 语法 (数学公式和 Mermaid除外,请在发布区进行手工渲染)，支持信息卡片。预览区与微信公众号编辑器等宽，所见即所得。欢迎使用👏！ **定制属于每个人自己的微信公众号样式！**
+:::
+
+[Paper 轻量级微信公众号 Markdown 编辑器 - 微信公众号文章简介](https://mp.weixin.qq.com/s/nbFNsOKvynUzzePMfkw79w)
+
+### 🎨 常见样式
+
+:::orange
+**浅橙色卡片：** Paper 是一款轻量级微信公众号 Markdown 编辑器。现代化三栏布局，实时 Markdown 预览，响应式设计；支持大部分 Markdown 语法 (数学公式和 Mermaid除外,请在发布区进行手工渲染)，支持信息卡片。
+:::
+
+:::blue
+**浅蓝色卡片：**Paper 是一款轻量级微信公众号 Markdown 编辑器。现代化三栏布局，实时 Markdown 预览，响应式设计；支持大部分 Markdown 语法 (数学公式和 Mermaid除外,请在发布区进行手工渲染)，支持信息卡片。 
+
+支持换行，支持图片。
+:::
+
+> **引用样式**：Paper 是一款轻量级微信公众号 Markdown 编辑器。现代化三栏布局，实时 Markdown 预览，响应式设计；支持大部分 Markdown 语法 (数学公式和 Mermaid除外)，支持信息卡片。预览区与微信公众号编辑器等宽，所见即所得。欢迎使用👏！
+
+:::info 信息卡片
+这是一个信息卡片，支持 **粗体** 和 *斜体* 文本，可以包含多个段落和图片。  
+![picture](https://pic.thus.chat/rest/gdIbj5K.png)
+:::
+
+
+\`\`\`python
+# 这是一个 Python 代码块
+def contains_number(s):
+    return any(char.isdigit() for char in s)
+
+test_string = "Hello123"
+if contains_number(test_string):
+    print("字符串包含数字")
+else:
+    print("字符串不包含数字")
+\`\`\`
+
+| 常用网址表格             | 功能                  | 推荐    |
+| ------------------------------------------- | ---------------------- | ------------ |
+| [Mermaid 渲染](https://mermaid-live.nodejs.cn/edit) | Mermaid图渲染 | 🌟🌟🌟  |
+| [数学公式渲染](https://mathjax.thus.chat/)   	| 数学公式渲染 | 🌟🌟🌟 |
+| [Markdown语法速查](https://xiaolinbaba.notion.site/Markdown-bcf20a9190db4b208dc137f755788405) | Markdown 语法速查 | 🌟🌟🌟🌟 |
+
+<![PIC01.png](https://pic.thus.chat/rest/0QryNTK.png),![PIC02.png](https://pic.thus.chat/rest/TypyNTK.png),![PIC03.png](https://pic.thus.chat/rest/6yRyNTK.png)>
+
+### 🎯 核心特性
+
+**1. 现代化三栏布局**
+- **编辑区**：支持 Markdown 语法编写
+- **预览区**：实时渲染，578px 宽度（与微信公众号编辑器等宽）
+- **发布区**：提供一键复制和相关工具链接
+
+**2. 微信公众号完美适配**
+- 预览区严格按照微信公众号标准，预览区与微信公众号编辑器等宽（578px）
+- 支持的样式完全兼容微信公众号平台
+- 一键复制后可直接粘贴到公众号编辑器
+
+**3. 丰富的功能支持**
+- ✅ 基础 Markdown 语法（标题、段落、列表、表格等）
+- ✅ 代码语法高亮（Kimbie Light 主题，Mac 风格）
+- ✅ 自定义信息卡片（\`:::info\` 语法）
+- ✅ 横屏滑动幻灯片（\`<![alt](url),![alt](url)>\` 语法）
+- ✅ 同步滚动（编辑器与预览区联动）
+- ❌ 数学公式（不支持，请使用发布区链接手工渲染）
+- ❌ Mermaid 图表（不支持，请使用发布区链接手工渲染）
+
+### 🛠️ 技术实现
+
+**前端技术栈：**
+- 纯 HTML + CSS + JavaScript（无框架依赖）
+- Showdown.js（Markdown 转 HTML）
+- Highlight.js（代码语法高亮）
+- Canvas-Confetti（复制成功动画效果）
+
+**核心功能：**
+- 实时 Markdown 渲染
+- 行内样式注入（确保微信兼容性）
+- 响应式设计
+
+### 📁 项目结构
+
+\`\`\`
+Paper/
+├── index.html         # 主应用文件（单文件应用）
+├── README.md          # 项目说明和使用示例
+├── WechatSupport.md     # 微信公众号支持的HTML标签说明
+└── favicon.svg       	# 网站图标
+\`\`\`
+
+### 🎨 特色功能
+
+**1. 信息卡片**
+\`\`\`markdown
+:::info 提示标题
+这里是卡片内容，支持**粗体**和*斜体*
+:::
+\`\`\`
+
+**2. 横屏滑动幻灯片**
+\`\`\`markdown
+<![图片1](url1),![图片2](url2),![图片3](url3)>
+\`\`\`
+
+**3. Mac 风格代码块**
+- 自动添加 Mac 样式的三色圆点
+- 支持多种编程语言语法高亮
+
+### 🚀 使用场景
+
+这个项目特别适合：
+- 微信公众号内容创作者
+- 单 Html 文件本地编辑器
+- 追求简洁高效的 Markdown 编辑体验
+
+
+## 快速使用
+
+1. 访问在线版 [paper.thus.chat](https://paper.thus.chat)
+2. 下载 \`html\` 单文件到本地 chrome 直接打开运行
+3. 下载 \`html\` 单文件部署到自己的服务器使用
+4. 下载 \`html\` 单文件用 \`AI\` 修改成自己喜欢的样式后食用 
+5. 免费部署到自己的 cloudflare pages，通过自己的域名访问。
+    ![cf.png](/cf.png)
+
+## 特别鸣谢
+
+Paper Markdown 编辑器的设计灵感参考了两个项目[jackywine](https://dqxf1izhlm.feishu.cn/wiki/RxfQwz2qXi06aqk17Hocfj5Gnk1), [md.doocs.org](https://md.doocs.org/)，欢迎大家关注这两个项目，也感谢两个项目作者的付出，谢谢。
+
+最后，本项目花费了不少精力，如果可以，请关注我的微信公众号，或加群讨论 Markdown 编辑器相关知识。感谢您的支持！
+![keeptouch.png](https://pic.thus.chat/rest/RxypSTK.png)`;
+          
+          setEditorValue(defaultContent);
+          render();
+        }
+        
+        // 复制按钮
+        copyBtn.addEventListener('click', () => {
+          const clone = preview.cloneNode(true);
+          
+          // 处理代码块中的空格和缩进，同时保持语法高亮
+          const codeElements = clone.querySelectorAll('pre code');
+          codeElements.forEach(code => {
+            // 递归处理所有文本节点，保持HTML结构和高亮样式
+            function processTextNodes(node) {
+              if (node.nodeType === Node.TEXT_NODE) {
+                // 处理文本节点中的空格和制表符
+                const text = node.textContent;
+                if (text.includes(' ') || text.includes('\t')) {
+                  const formattedText = text
+                    .replace(/ /g, '\u00A0') // 所有空格转换为不间断空格字符
+                    .replace(/\t/g, '\u00A0\u00A0\u00A0\u00A0'); // 制表符转换为四个不间断空格字符
+                  node.textContent = formattedText;
+                }
+              } else {
+                // 递归处理子节点
+                Array.from(node.childNodes).forEach(child => {
+                  processTextNodes(child);
+                });
+              }
+            }
+            
+            processTextNodes(code);
+          });
+          
+          inlineStyles(clone);
+          clone.style.position = 'fixed'; 
+          clone.style.top = '0'; 
+          clone.style.left = '-9999px';
+          document.body.appendChild(clone);
+          
+          const range = document.createRange(); 
+          range.selectNodeContents(clone);
+          const sel = window.getSelection(); 
+          sel.removeAllRanges(); 
+          sel.addRange(range);
+          
+          let success = false;
+          try { 
+            success = document.execCommand('copy'); 
+          } catch(e) { 
+            success = false; 
+          }
+          
+          sel.removeAllRanges(); 
+          document.body.removeChild(clone);
+          
+          if (success) {
+            copyBtn.textContent = '已复制！';
+            setTimeout(() => {
+              copyBtn.textContent = '复制到公众号';
+            }, 2000);
+            if (myConfetti) {
+              myConfetti({ 
+                particleCount: 150, 
+                spread: 60, 
+                origin: { y: 0.4 }
+              });
+            }
+          } else {
+            alert('复制失败，请手动复制。');
+          }
+        });
+        
+        // 同步滚动功能
+        let isEditorScrolling = false;
+        let isPreviewScrolling = false;
+        const previewContent = document.querySelector('.preview-content');
+        
+        function syncScroll(source, target) {
+          // 如果正在渲染，跳过同步滚动
+          if (isRendering) return;
+          if (source === 'editor' && isPreviewScrolling) return;
+          if (source === 'preview' && isEditorScrolling) return;
+          
+          let sourceScrollTop, sourceScrollHeight;
+          
+          if (source === 'editor') {
+            const scrollInfo = codeMirrorEditor.getScrollInfo();
+            sourceScrollTop = scrollInfo.top;
+            sourceScrollHeight = scrollInfo.height - scrollInfo.clientHeight;
+          } else {
+            sourceScrollTop = previewContent.scrollTop;
+            sourceScrollHeight = previewContent.scrollHeight - previewContent.clientHeight;
+          }
+          
+          const targetScrollHeight = target.scrollHeight - target.clientHeight;
+          
+          if (sourceScrollHeight > 0 && targetScrollHeight > 0) {
+            const scrollRatio = sourceScrollTop / sourceScrollHeight;
+            const targetScrollTop = scrollRatio * targetScrollHeight;
+            target.scrollTop = targetScrollTop;
+          }
+        }
+        
+        // 编辑器滚动时同步预览区
+        codeMirrorEditor.on('scroll', () => {
+          if (isRendering) return; // 渲染时跳过滚动同步
+          isEditorScrolling = true;
+          syncScroll('editor', previewContent);
+          setTimeout(() => {
+            isEditorScrolling = false;
+          }, 100);
+        });
+        
+        // 预览区滚动时同步编辑器
+        previewContent.addEventListener('scroll', () => {
+          if (isRendering) return; // 渲染时跳过滚动同步
+          isPreviewScrolling = true;
+          const scrollInfo = previewContent.scrollTop;
+          const scrollHeight = previewContent.scrollHeight - previewContent.clientHeight;
+          const editorScrollInfo = codeMirrorEditor.getScrollInfo();
+          const editorScrollHeight = editorScrollInfo.height - editorScrollInfo.clientHeight;
+          
+          if (scrollHeight > 0 && editorScrollHeight > 0) {
+            const scrollRatio = scrollInfo / scrollHeight;
+            const editorScrollTop = scrollRatio * editorScrollHeight;
+            codeMirrorEditor.scrollTo(null, editorScrollTop);
+          }
+          
+          setTimeout(() => {
+            isPreviewScrolling = false;
+          }, 100);
+        });
+      }
+    });
+  </script>
+</body>
+</html>
