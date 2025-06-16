@@ -100,6 +100,11 @@ const config = {
           {to: '/blog', label: '博客', position: 'left'},
           {to: '/about', label: '关于我', position: 'left'},
           {
+            href: 'https://xwqsean.github.io/Paper.html',
+            label: 'markdown',
+            position: 'right',
+          },
+          {
             href: 'https://github.com/xwqsean',
             label: 'GitHub',
             position: 'right',
