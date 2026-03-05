@@ -100,9 +100,8 @@ const config = {
           customCss: './src/css/custom.css',
         },
         sitemap: {
-          changefreq: 'weekly',
-          priority: 0.5,
-          ignorePatterns: ['/tags/**'],
+          lastmod: 'date',
+          ignorePatterns: ['/tags/**', '/blog/tags/**'],
           filename: 'sitemap.xml',
         },
       }),
