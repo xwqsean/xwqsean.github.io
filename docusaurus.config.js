@@ -34,9 +34,39 @@ const config = {
   // useful metadata like html lang. For example, if your site is Chinese, you
   // may want to replace "en" with "zh-Hans".
   i18n: {
-    defaultLocale: 'en',
-    locales: ['en'],
+    defaultLocale: 'zh-Hans',
+    locales: ['zh-Hans'],
   },
+
+  // SEO: inject Google & Baidu site-verification meta tags into <head>
+  headTags: [
+    {
+      tagName: 'meta',
+      attributes: {
+        name: 'google-site-verification',
+        content: '2cb0d93a21462648',
+      },
+    },
+    // TODO: Replace the content value below with your Baidu verification code
+    // obtained from https://ziyuan.baidu.com/  (百度搜索资源平台 -> 网站验证)
+    // {
+    //   tagName: 'meta',
+    //   attributes: {
+    //     name: 'baidu-site-verification',
+    //     content: 'YOUR_BAIDU_VERIFICATION_CODE',
+    //   },
+    // },
+  ],
+
+  // SEO: Baidu auto-push script (百度自动推送) — speeds up Baidu indexing of new pages.
+  // Loaded from Baidu's official CDN (bdstatic.com). SRI is not applied because
+  // this CDN script is updated by Baidu and a pinned hash would break on updates.
+  scripts: [
+    {
+      src: 'https://zz.bdstatic.com/linksubmit/push.js',
+      defer: true,
+    },
+  ],
 
 
   presets: [
@@ -70,7 +100,7 @@ const config = {
           customCss: './src/css/custom.css',
         },
         sitemap: {
-          changefreq: 'hourly',
+          changefreq: 'weekly',
           priority: 0.5,
           ignorePatterns: ['/tags/**'],
           filename: 'sitemap.xml',
